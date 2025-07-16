@@ -2,36 +2,44 @@ import User from "../models/userModels.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// GENERATE A TOKEN JWT
+// GENERATE A TOKEN (JWT)
 const generateToken = (userID) => {
-  return jwt.sign({ id: userID }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ id: userID }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
+// ===================== REGISTER =====================
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check User Is already Exist Or Not
+    // Check if user already exists
     const userExist = await User.findOne({ email });
     if (userExist) {
-      return res.status(400).json({ message: "User Already Exist" });
+      return res.status(400).json({ message: "User already exists" });
     }
-    if (password < 8) {
-      return res.status(400).jsom({
+
+    // Check password length
+    if (password.length < 8) {
+      return res.status(400).json({
         success: false,
-        message: "Password must be of Atleast 8 Characters",
+        message: "Password must be at least 8 characters",
       });
     }
-    // Hashing Password
-    const salt = await bcrypt.genSalt(10);
-    const hashedpassword = await bcrypt.hash(password, salt);
 
-    // CREATE USER
-    const user = User.create({
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const user = await User.create({
       name,
       email,
-      password: hashedpassword,
+      password: hashedPassword,
     });
+
+    // Send success response
     return res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -46,21 +54,25 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// LOGIN FUNCTION
-export const Loginuser = async (req, res) => {
+// ===================== LOGIN =====================
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await findOne({ email });
+
+    // Find user by email
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(500).json({ message: "Invalid Email or Password" });
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // Compare the Password
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(500).json({ message: "Invalid Email or Password" });
+      return res.status(400).json({ message: "Invalid email or password" });
     }
-    return res.status(201).json({
+
+    // Send success response
+    return res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -74,14 +86,16 @@ export const Loginuser = async (req, res) => {
   }
 };
 
-// GET USER PROFILE
+// ===================== GET USER PROFILE =====================
 export const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
+
     if (!user) {
-      return res.status(404).json({ message: "User Not Found" });
+      return res.status(404).json({ message: "User not found" });
     }
-    res.json(user);
+
+    res.status(200).json(user);
   } catch (error) {
     res.status(500).json({
       message: "Server Error",
