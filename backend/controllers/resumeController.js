@@ -1,5 +1,6 @@
 import Resume from "../models/resumeModel.js";
 import fs from "fs";
+import { request } from "http";
 import path from "path";
 
 export const createResume = async (req, res) => {
@@ -176,6 +177,25 @@ export const deleteResume = async (req, res) => {
         uploadsFolder ,
         path.basename(resume.profileInfo.profilePreviewURL),
       )
+      if(fs.existsSync(oldprofile)){
+        fs.unlinkSync(oldprofile)
+      }
     }
-  } catch (error) {}
+
+    // Delete the resume doc
+    const deleted = await resume.findOneAndDelete(
+      {
+        _id: params.id,
+        UserID: req.User._id,
+      }
+    )
+    if(!deleted){
+      return res.status(404).json({ message: "Resume not found or not authorized" });
+    }
+    res.json({message: "Resume deleted Successfully"})
+  } catch (error) {
+    return res
+      .status(500)
+      .jwt({ message: "Failed to Delete Resume", error: error.message });
+  }
 };
