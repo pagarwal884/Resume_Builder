@@ -20,3 +20,6 @@ const fileFilter = (req, file,cb) => {
         cb(new Error("Onlu .jpeg, .jpg or .png are allowed format"), false)
     }
 }
+
+const upload = multer({ storage, fileFilter})
+export default upload;
