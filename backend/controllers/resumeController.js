@@ -13,9 +13,8 @@ import path from "path";
 // [commit: implemented createResume endpoint with default resume template]
 export const createResume = async (req, res) => {
   try {
-    const { title } = req.body; // [commit: extract resume title from request body]
+    const { title, userId } = req.body;
 
-    // [commit: define default resume template structure for new documents]
     const defaultResumeData = {
       profileInfo: {
         profileImg: null,
@@ -35,9 +34,7 @@ export const createResume = async (req, res) => {
       workExperience: [
         { company: "", role: "", startDate: "", endDate: "", description: "" },
       ],
-      education: [
-        { degree: "", institution: "", startDate: "", endDate: "" },
-      ],
+      education: [{ degree: "", institution: "", startDate: "", endDate: "" }],
       skills: [{ name: "", progress: 0 }],
       projects: [{ title: "", description: "", github: "", liveDemo: "" }],
       certifications: [{ title: "", issuer: "", year: "" }],
@@ -45,18 +42,15 @@ export const createResume = async (req, res) => {
       interests: [""],
     };
 
-    // [commit: create new Resume document linked to user ID]
     const newResume = await Resume.create({
-      UserID: req.User._id,
+      UserID: req.User?._id || userId, // ✅ safer assignment
       title,
       ...defaultResumeData,
-      ...req.body, // [commit: allow user-provided values to override defaults]
+      ...req.body,
     });
 
-    // [commit: return created resume with 201 status]
     res.status(201).json(newResume);
   } catch (error) {
-    // [commit: handle error response for resume creation]
     res.status(500).json({ message: "Failed To create Resume", error: error.message });
   }
 };

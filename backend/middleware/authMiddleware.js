@@ -1,34 +1,33 @@
-import User from "../models/userModels.js";
 import jwt from "jsonwebtoken";
+import User from "../models/userModels.js";
 
-// ===================== PROTECT MIDDLEWARE ===================== //
-// This middleware protects private routes by verifying JWT tokens
+// Protect middleware: verifies JWT token
 export const protect = async (req, res, next) => {
   try {
-    // 🔹 Extract token from request headers
-    // NOTE: should be "req.headers.authorization" instead of "req.header.authorization"
-    let token = req.headers.authorization;
+    let token;
 
-    // 🔹 Check if token exists and starts with "Bearer"
-    if (token && token.startsWith("Bearer")) {
-      // Remove "Bearer " from token string
-      token = token.split(" ")[1];
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1]; // Extract token
 
-      // 🔹 Verify token with JWT secret
+      // Verify token with secret
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // 🔹 Fetch user by decoded ID and exclude password field
+      // Attach user to request (without password)
       req.user = await User.findById(decoded.id).select("-password");
 
-      // 🔹 Pass control to next middleware/route
+      if (!req.user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
       next();
     } else {
-      // No token provided
-      res.status(401).json({ message: "Not authorized, no token found" });
+      return res.status(401).json({ message: "Not authorized, no token found" });
     }
   } catch (error) {
-    // 🔹 Handle invalid/expired token
-    res.status(401).json({
+    return res.status(401).json({
       message: "Token verification failed",
       error: error.message,
     });
