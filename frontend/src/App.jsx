@@ -3,9 +3,11 @@ import LandingPage from './pages/LandingPage'
 
 function App() {
   return (
-    <Routes>
-      <Route path='/' element={<LandingPage />} />
-    </Routes>
+    <userProvider>
+      <Routes>
+        <Route path='/' element={<LandingPage />} />
+      </Routes>
+    </userProvider>
   )
 }
 
