@@ -1,14 +1,15 @@
-import { Routes, Route } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
+import { Routes, Route } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
+import UserProvider from "./context/Usercontext";  
 
 function App() {
   return (
-    <userProvider>
+    <UserProvider>   
       <Routes>
-        <Route path='/' element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
       </Routes>
-    </userProvider>
-  )
+    </UserProvider>
+  );
 }
 
-export default App
+export default App;

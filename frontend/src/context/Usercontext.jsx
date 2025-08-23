@@ -4,49 +4,50 @@ import { API_PATHS } from "../utils/apiPath";
 
 export const UserContext = createContext();
 
-const userProvider = ({children}) => {
-    const [user, setUser] = useState(null)
-    const [loading, setLoading] = useState(true)
+const UserProvider = ({ children }) => {   // ✅ Capitalized
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) return
+  useEffect(() => {
+    if (user) return;
 
-        const accessToken = localStorage.getItem('token')
-        if(!accessToken){
-            setLoading(false)
-            return;
-        }
-        const fetchUser = async() => {
-            try {
-                const response = await axioinstance.get(API_PATHS.AUTH.GET_PROFILE)
-                setUser(response.data)
-            } catch (error) {
-                console.error("User not authenticated",error)
-                clearUser()
-            }
-            finally{
-                setLoading(false)
-            }
-        };
-        fetchUser();
-    }, []);
-
-    const updateUser = (userData) => {
-        setUser(userData)
-        localStorage.setItem('token',userData.token)
-        setLoading(false)
+    const accessToken = localStorage.getItem("token");
+    if (!accessToken) {
+      setLoading(false);
+      return;
     }
 
-    const clearUser = () =>{
-        setUser(null)
-        localStorage.removeItem('token')
-    }
+    const fetchUser = async () => {
+      try {
+        const response = await axioinstance.get(API_PATHS.AUTH.GET_PROFILE);
+        setUser(response.data);
+      } catch (error) {
+        console.error("User not authenticated", error);
+        clearUser();
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return (
+    fetchUser();
+  }, []);
+
+  const updateUser = (userData) => {
+    setUser(userData);
+    localStorage.setItem("token", userData.token);
+    setLoading(false);
+  };
+
+  const clearUser = () => {
+    setUser(null);
+    localStorage.removeItem("token"); // ✅ safer than clear()
+  };
+
+  return (
     <UserContext.Provider value={{ user, loading, updateUser, clearUser }}>
       {children}
     </UserContext.Provider>
   );
-}
+};
 
-export default userProvider
+export default UserProvider;
