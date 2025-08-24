@@ -1,20 +1,15 @@
 // ================= IMPORTS =================
-// [commit: imported Resume model to interact with MongoDB resumes collection]
-import Resume from "../models/resumeModel.js";
-
-// [commit: imported fs module for file deletion handling]
-import fs from "fs";
-
-// [commit: imported path module for safe file path handling]
-import path from "path";
+import Resume from "../models/resumeModel.js"; // Mongoose model for Resume schema
+import fs from "fs"; // File system module (used to delete files)
+import path from "path"; // Path module (for handling safe file paths)
 
 
 // ================= CREATE RESUME =================
-// [commit: implemented createResume endpoint with default resume template]
 export const createResume = async (req, res) => {
   try {
-    const { title, userId } = req.body;
+    const { title, userId } = req.body; // Extract title and userId from request body
 
+    // Default resume structure (pre-filled blank template for new users)
     const defaultResumeData = {
       profileInfo: {
         profileImg: null,
@@ -42,14 +37,15 @@ export const createResume = async (req, res) => {
       interests: [""],
     };
 
+    // Create a new resume in MongoDB
     const newResume = await Resume.create({
-      UserID: req.User?._id || userId, // ✅ safer assignment
+      UserID: req.User?._id || userId, // Prefer authenticated userId, fallback to passed one
       title,
-      ...defaultResumeData,
-      ...req.body,
+      ...defaultResumeData, // Insert default fields
+      ...req.body, // Overwrite defaults with user-provided fields
     });
 
-    res.status(201).json(newResume);
+    res.status(201).json(newResume); // Send back created resume
   } catch (error) {
     res.status(500).json({ message: "Failed To create Resume", error: error.message });
   }
@@ -57,10 +53,9 @@ export const createResume = async (req, res) => {
 
 
 // ================= GET ALL RESUMES OF USER =================
-// [commit: implemented getUserResume to fetch all resumes of logged-in user]
 export const getUserResume = async (req, res) => {
   try {
-    // [commit: fetch resumes by user ID and sort by last updated]
+    // Find all resumes belonging to the logged-in user, sorted by latest update
     const resumes = await Resume.find({ UserID: req.User._id }).sort({ updatedAt: -1 });
     res.json(resumes);
   } catch (error) {
@@ -70,10 +65,9 @@ export const getUserResume = async (req, res) => {
 
 
 // ================= GET RESUME BY ID =================
-// [commit: implemented getResumebyID with user authorization check]
 export const getResumebyID = async (req, res) => {
   try {
-    // [commit: fetch single resume by ID ensuring ownership]
+    // Find resume by its ID, but only if it belongs to the logged-in user
     const resume = await Resume.findOne({ _id: req.params.id, UserID: req.User._id });
 
     if (!resume) {
@@ -88,19 +82,18 @@ export const getResumebyID = async (req, res) => {
 
 
 // ================= UPDATE RESUME =================
-// [commit: implemented updateResume with shallow merge of fields]
 export const updateResume = async (req, res) => {
   try {
-    // [commit: ensure resume exists and belongs to user]
+    // Check if resume exists and belongs to logged-in user
     const resume = await Resume.findOne({ _id: req.params.id, UserID: req.User._id });
     if (!resume) {
       return res.status(404).json({ message: "Resume not found or not authorized" });
     }
 
-    // [commit: merge request body fields into existing resume object]
+    // Merge incoming fields into the existing resume (shallow merge)
     Object.assign(resume, req.body);
 
-    // [commit: save updated document to DB]
+    // Save updated resume
     const savedResume = await resume.save();
     res.json(savedResume);
   } catch (error) {
@@ -110,19 +103,18 @@ export const updateResume = async (req, res) => {
 
 
 // ================= DELETE RESUME =================
-// [commit: implemented deleteResume with file cleanup for thumbnails/profile images]
 export const deleteResume = async (req, res) => {
   try {
-    // [commit: find resume by ID and user ownership]
+    // Check if resume exists and belongs to user
     const resume = await Resume.findOne({ _id: req.params.id, UserID: req.User._id });
     if (!resume) {
       return res.status(404).json({ message: "Resume not found or not authorized" });
     }
 
-    // [commit: define uploads folder path]
+    // Define the folder where uploaded files are stored
     const uploadsFolder = path.join(process.cwd(), "uploads");
 
-    // [commit: delete old thumbnail if exists]
+    // Delete stored thumbnail image if exists
     if (resume.thumbnailLink) {
       const oldThumbnail = path.join(uploadsFolder, path.basename(resume.thumbnailLink));
       if (fs.existsSync(oldThumbnail)) {
@@ -130,7 +122,7 @@ export const deleteResume = async (req, res) => {
       }
     }
 
-    // [commit: delete old profile preview image if exists]
+    // Delete stored profile image if exists
     if (resume.profileInfo.previewUrl) {
       const oldProfile = path.join(uploadsFolder, path.basename(resume.profileInfo.previewUrl));
       if (fs.existsSync(oldProfile)) {
@@ -138,7 +130,7 @@ export const deleteResume = async (req, res) => {
       }
     }
 
-    // [commit: remove resume document from MongoDB]
+    // Finally delete the resume document from MongoDB
     const deleted = await Resume.findOneAndDelete({ _id: req.params.id, UserID: req.User._id });
 
     if (!deleted) {
